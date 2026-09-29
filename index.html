@@ -1,0 +1,193 @@
+**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState } from 'react';
+import { Navbar } from './components/Navbar';
+import { Hero } from './components/Hero';
+import { FeaturesPillars } from './components/FeaturesPillars';
+import { ProductCatalog } from './components/ProductCatalog';
+import { CodDeliveryCalculator } from './components/CodDeliveryCalculator';
+import { HeritageStory } from './components/HeritageStory';
+import { MarketingToolkit } from './components/MarketingToolkit';
+import { Testimonials } from './components/Testimonials';
+import { CartDrawer } from './components/CartDrawer';
+import { Footer } from './components/Footer';
+import { CartItem, ProductItem } from './types';
+import { MessageCircle, ShoppingBag } from 'lucide-react';
+import { WHATSAPP_INT_NUMBER } from './data/bandengData';
+
+export default function App() {
+  const [cart, setCart] = useState<CartItem[]>([
+    // Start with 1 default item so the user can immediately experience the cart value & bundling calculator
+    {
+      product: {
+        id: 'sate-bandeng-original',
+        name: 'Sate Bandeng Original Gurih',
+        category: 'siap-saji',
+        price: 15000,
+        originalPrice: 18000,
+        weight: '300 Gram',
+        description: 'Bandeng segar Mauk tanpa duri dengan adonan santan kelapa sangrai dan rempah tradisional warisan Bapak Sarnaka.',
+        features: ['100% Tanpa Duri', 'Bumbu Santan Rempah Autentik', 'Aroma Bakar Batok Kelapa Alami', 'Kemasan Higienis'],
+        image: '/src/assets/images/hero_sate_bandeng_premium_1790666330088.jpg',
+        isPopular: true,
+        spiceLevel: 'Original Gurih',
+      },
+      quantity: 2,
+      servingPreference: 'Siap Saji (Hangat Bakar)',
+      spiceOption: 'Original Gurih',
+    },
+  ]);
+
+  const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
+  const [toastNotification, setToastNotification] = useState<string | null>(null);
+
+  const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const showToast = (message: string) => {
+    setToastNotification(message);
+    setTimeout(() => {
+      setToastNotification(null);
+    }, 2800);
+  };
+
+  const handleAddToCart = (
+    product: ProductItem,
+    servingPreference: 'Siap Saji (Hangat Bakar)' | 'Frozen Vacuum Pack',
+    spiceOption: string
+  ) => {
+    setCart((prevCart) => {
+      const existingIndex = prevCart.findIndex(
+        (item) =>
+          item.product.id === product.id &&
+          item.servingPreference === servingPreference &&
+          item.spiceOption === spiceOption
+      );
+
+      if (existingIndex > -1) {
+        const updated = [...prevCart];
+        updated[existingIndex].quantity += 1;
+        return updated;
+      } else {
+        return [...prevCart, { product, quantity: 1, servingPreference, spiceOption }];
+      }
+    });
+
+    showToast(`✓ Ditambahkan: ${product.name} (${servingPreference})`);
+  };
+
+  const handleDirectOrder = (
+    product: ProductItem,
+    servingPreference: 'Siap Saji (Hangat Bakar)' | 'Frozen Vacuum Pack',
+    spiceOption: string
+  ) => {
+    handleAddToCart(product, servingPreference, spiceOption);
+    setIsCartOpen(true);
+  };
+
+  const handleUpdateQuantity = (index: number, newQty: number) => {
+    if (newQty <= 0) {
+      handleRemoveItem(index);
+      return;
+    }
+    setCart((prevCart) => {
+      const updated = [...prevCart];
+      updated[index].quantity = newQty;
+      return updated;
+    });
+  };
+
+  const handleRemoveItem = (index: number) => {
+    setCart((prevCart) => prevCart.filter((_, i) => i !== index));
+    showToast('Item dihapus dari keranjang');
+  };
+
+  const handleClearCart = () => {
+    setCart([]);
+    showToast('Keranjang pesanan dikosongkan');
+  };
+
+  const scrollToSection = (sectionId: string) => {
+    const el = document.getElementById(sectionId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-white text-slate-800 flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* Toast Feedback */}
+      {toastNotification && (
+        <div className="fixed top-20 right-5 z-50 bg-[#0A2A5E] text-white px-4 py-2.5 rounded-lg shadow-xl text-xs font-semibold flex items-center gap-2 border border-white/20 animate-fade-in">
+          <span>{toastNotification}</span>
+        </div>
+      )}
+
+      {/* Top Bar Navigation */}
+      <Navbar
+        cartCount={totalCartCount}
+        onOpenCart={() => setIsCartOpen(true)}
+        onNavigateToSection={scrollToSection}
+      />
+
+      {/* Main Content Layout */}
+      <main className="flex-1">
+        <Hero
+          onExploreMenu={() => scrollToSection('menu')}
+          onOpenCodCalculator={() => scrollToSection('layanan-cod')}
+        />
+
+        <FeaturesPillars />
+
+        <ProductCatalog
+          onAddToCart={handleAddToCart}
+          onDirectOrder={handleDirectOrder}
+        />
+
+        <CodDeliveryCalculator />
+
+        <HeritageStory />
+
+        <MarketingToolkit />
+
+        <Testimonials />
+      </main>
+
+      {/* Footer */}
+      <Footer onNavigateToSection={scrollToSection} />
+
+      {/* Slide-over Cart Drawer */}
+      <CartDrawer
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        cart={cart}
+        onUpdateQuantity={handleUpdateQuantity}
+        onRemoveItem={handleRemoveItem}
+        onClearCart={handleClearCart}
+      />
+
+      {/* Floating Sticky Mobile Quick Action Bar (adheres to <=15% mobile viewport cap) */}
+      <div className="md:hidden fixed bottom-3 right-3 left-3 z-30 flex items-center gap-2 bg-white/95 backdrop-blur-md p-2 rounded-xl shadow-xl border border-slate-200">
+        <button
+          onClick={() => setIsCartOpen(true)}
+          className="flex-1 py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-bold flex items-center justify-center gap-2"
+        >
+          <ShoppingBag className="w-4 h-4 text-[#0A2A5E]" />
+          <span>Pesanan ({totalCartCount})</span>
+        </button>
+
+        <a
+          href={`https://wa.me/${WHATSAPP_INT_NUMBER}?text=Halo%20Bapak%20Sarnaka,%20saya%20mau%20order%20COD%20Sate%20Bandeng%20Mauk`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 py-2.5 px-3 bg-[#0A2A5E] hover:bg-[#071f45] text-white rounded-lg text-xs font-bold flex items-center justify-center gap-2 shadow"
+        >
+          <MessageCircle className="w-4 h-4 text-emerald-400" />
+          <span>Order via WA</span>
+        </a>
+      </div>
+    </div>
+  );
+}
